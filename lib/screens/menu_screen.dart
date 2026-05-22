@@ -21,11 +21,14 @@ class MenuScreen extends StatelessWidget {
             const SizedBox(height: 5),
             const Text("Mau jago apa hari ini?", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 25),
-            // Daftar Menu Lengkap: Penjumlahan, Pengurangan, Perkalian, Pembagian
+            // Daftar Menu Lengkap
             _buildMenuCard(context, "Penjumlahan", "Belajar tambah-tambahan", Icons.add, Colors.orange),
             _buildMenuCard(context, "Pengurangan", "Belajar kurang-kurangan", Icons.remove, Colors.green),
             _buildMenuCard(context, "Perkalian", "Belajar kali-kalian", Icons.close, Colors.red),
             _buildMenuCard(context, "Pembagian", "Belajar bagi-bagian", Icons.percent, Colors.blue),
+            _buildMenuCard(context, "Perakaran", "Belajar akar kuadrat", Icons.looks_one_outlined, Colors.purple),
+            // MENU BARU: PERPANGKATAN
+            _buildMenuCard(context, "Perpangkatan", "Belajar pangkat dua", Icons.trending_up, Colors.pink),
           ],
         ),
       ),
