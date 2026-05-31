@@ -6,57 +6,118 @@ class MenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFE3F2FD), // Latar belakang biru langit sangat muda
       appBar: AppBar(
-        title: const Text("Pilih Materi", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Math Quest", 
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontFamily: 'Fredoka')
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle, color: Colors.blueGrey, size: 30),
+            onPressed: () {},
+          )
+        ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
-        child: ListView(
+        child: Column(
           children: [
-            const Text("Halo, Selamat Belajar!", style: TextStyle(fontSize: 18, color: Colors.grey)),
+            const Text(
+              "Pilih Petualanganmu!", 
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.indigo, fontFamily: 'Fredoka')
+            ),
             const SizedBox(height: 5),
-            const Text("Mau jago apa hari ini?", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text(
+              "Kumpulkan bintang di setiap pulau matematika", 
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.blueGrey),
+            ),
             const SizedBox(height: 25),
-            // Daftar Menu Lengkap
-            _buildMenuCard(context, "Penjumlahan", "Belajar tambah-tambahan", Icons.add, Colors.orange),
-            _buildMenuCard(context, "Pengurangan", "Belajar kurang-kurangan", Icons.remove, Colors.green),
-            _buildMenuCard(context, "Perkalian", "Belajar kali-kalian", Icons.close, Colors.red),
-            _buildMenuCard(context, "Pembagian", "Belajar bagi-bagian", Icons.percent, Colors.blue),
-            _buildMenuCard(context, "Perakaran", "Belajar akar kuadrat", Icons.looks_one_outlined, Colors.purple),
-            // MENU BARU: PERPANGKATAN
-            _buildMenuCard(context, "Perpangkatan", "Belajar pangkat dua", Icons.trending_up, Colors.pink),
+            
+            // Grid Menu 2 Kolom mirip di screenshot
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 15,
+              mainAxisSpacing: 15,
+              childAspectRatio: 0.85,
+              children: [
+                _buildGridCard(context, "Tambah", Icons.add, Colors.cyan, "Level 1"),
+                _buildGridCard(context, "Kurang", Icons.remove, Colors.amber, "Level 1"),
+                _buildGridCard(context, "Kali", Icons.close, Colors.lightGreen, "Level 1"),
+                _buildGridCard(context, "Bagi", Icons.percent, Colors.pinkAccent, "Level 1"),
+                _buildGridCard(context, "Akar", Icons.looks_one_outlined, Colors.purple, "Terkuat"),
+                _buildGridCard(context, "Pangkat", Icons.trending_up, Colors.orange, "Terkuat"),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMenuCard(BuildContext context, String title, String sub, IconData icon, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, spreadRadius: 2)
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(icon, color: color),
+  Widget _buildGridCard(BuildContext context, String title, IconData icon, Color color, String level) {
+    // Mapping nama judul ke argumen rute asli program kita
+    String materiArg = title;
+    if (title == "Akar") materiArg = "Perakaran";
+    if (title == "Pangkat") materiArg = "Perpangkatan";
+    if (title == "Tambah") materiArg = "Penjumlahan";
+    if (title == "Kurang") materiArg = "Pengurangan";
+    if (title == "Kali") materiArg = "Perkalian";
+    if (title == "Bagi") materiArg = "Pembagian";
+
+    return InkWell(
+      onTap: () {
+        Navigator.pushNamed(context, '/latihan', arguments: materiArg);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25), // Sudut sangat bulat (Playful)
+          border: Border.all(color: color.withOpacity(0.3), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            )
+          ],
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        subtitle: Text(sub),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
-        onTap: () {
-          Navigator.pushNamed(context, '/latihan', arguments: title);
-        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 40),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title, 
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blueGrey)
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Text(
+                level, 
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
