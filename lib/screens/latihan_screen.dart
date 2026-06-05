@@ -13,23 +13,35 @@ class _LatihanScreenState extends State<LatihanScreen> {
   
   List<SoalModel> daftarSoal = [];
   int indexSoalSaatIni = 0;
-  String pesanStatus = "Pecahkan Misteri Ini! ✨";
+  String pesanStatus = "Hitung Benda di Bawah Ini! ✨";
   String teksPenyelesaian = "";
   bool sudahDijawab = false;
+
+  // Variabel Fitur Belajar Sambil Bermain (Gamifikasi Anak)
+  int nyawa = 3;
+  int koin = 0;
+  int skor = 0;
+  bool gameOver = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (daftarSoal.isEmpty) {
       final String materi = ModalRoute.of(context)!.settings.arguments as String;
-      daftarSoal = BankSoal.ambilSoal(materi);
+      
+      // Mengambil soal emoji dari bank soal
+      List<SoalModel> soalAsli = BankSoal.ambilSoal(materi);
+      daftarSoal = List.from(soalAsli);
+      
+      // Langsung diacak urutannya biar bervariasi bagi anak-anak
+      daftarSoal.shuffle(); 
     }
   }
 
   void cekJawaban() {
-    if (daftarSoal.isEmpty) return;
+    if (daftarSoal.isEmpty || gameOver) return;
 
-    int userAns = int.tryParse(_ansController.text) ?? 0;
+    int userAns = int.tryParse(_ansController.text) ?? -1;
     SoalModel soalAktif = daftarSoal[indexSoalSaatIni];
 
     setState(() {
@@ -37,30 +49,49 @@ class _LatihanScreenState extends State<LatihanScreen> {
       teksPenyelesaian = soalAktif.caraPenyelesaian;
 
       if (userAns == soalAktif.kunciJawaban) {
-        pesanStatus = "🎉 HEBAT! Jawaban Kamu Benar!";
+        pesanStatus = "🎉 HEBAT! JAWABANMU BENAR! (+10 Koin)";
+        koin += 10;
+        skor += 20;
       } else {
-        pesanStatus = "💥 Jawaban kurang tepat! Coba lagi ya!";
+        nyawa -= 1;
+        if (nyawa <= 0) {
+          gameOver = true;
+          pesanStatus = "😭 GAME OVER! Main Lagi Yuk Sayang!";
+        } else {
+          pesanStatus = "💥 Oh-Oh! Kurang Tepat, Hati Berkurang 1!";
+        }
       }
     });
   }
 
   void soalBerikutnya() {
     setState(() {
-      if (indexSoalSaatIni < daftarSoal.length - 1) {
+      if (gameOver) {
+        // Reset Game Total
+        indexSoalSaatIni = 0;
+        nyawa = 3;
+        koin = 0;
+        skor = 0;
+        gameOver = false;
+        _ansController.clear();
+        pesanStatus = "Hitung Benda di Bawah Ini! ✨";
+        teksPenyelesaian = "";
+        sudahDijawab = false;
+        daftarSoal.shuffle(); // Acak ulang rute pulau bermain
+      } else if (indexSoalSaatIni < daftarSoal.length - 1) {
         indexSoalSaatIni++;
         _ansController.clear();
-        pesanStatus = "Pecahkan Misteri Ini! ✨";
+        pesanStatus = "Hitung Benda di Bawah Ini! ✨";
         teksPenyelesaian = "";
         sudahDijawab = false;
       } else {
-        pesanStatus = "🏆 Keren! Kamu Menyelesaikan Semua Tantangan!";
+        pesanStatus = "🏆 LUAR BIASA! Petualangan Selesai!";
       }
     });
   }
 
-  // Fungsi untuk memasukkan angka lewat tombol instan pilihan ganda
   void inputAngkaTombol(int angka) {
-    if (!sudahDijawab) {
+    if (!sudahDijawab && !gameOver) {
       setState(() {
         _ansController.text = angka.toString();
       });
@@ -82,9 +113,9 @@ class _LatihanScreenState extends State<LatihanScreen> {
     SoalModel soalAktif = daftarSoal[indexSoalSaatIni];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4C3), // Latar belakang hijau limau pastel segar
+      backgroundColor: const Color(0xFFF0F4C3), // Hijau ceria ramah anak
       appBar: AppBar(
-        title: Text("Misi: $materi", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+        title: Text("Misi Pintar: $materi", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -96,66 +127,100 @@ class _LatihanScreenState extends State<LatihanScreen> {
         padding: const EdgeInsets.all(25),
         child: Column(
           children: [
-            // Indikator Progress Bar Game
+            // Status Bar Atas (Hati Nyawa & Koin Emas)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: List.generate(3, (index) {
+                    return Icon(
+                      Icons.favorite,
+                      color: index < nyawa ? Colors.red : Colors.grey[400],
+                      size: 32,
+                    );
+                  }),
+                ),
+                Row(
+                  children: [
+                    const Icon(Icons.monetization_on, color: Colors.amber, size: 30),
+                    const SizedBox(width: 4),
+                    Text("$koin", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.brown)),
+                    const SizedBox(width: 15),
+                    const Icon(Icons.emoji_events, color: Colors.orange, size: 30),
+                    const SizedBox(width: 4),
+                    Text("$skor", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.brown)),
+                  ],
+                )
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // Progress Bar Lintasan Belajar
             LinearProgressIndicator(
               value: (indexSoalSaatIni + 1) / daftarSoal.length,
               backgroundColor: Colors.white,
               color: Colors.lightGreen,
-              minHeight: 10,
+              minHeight: 12,
               borderRadius: BorderRadius.circular(10),
             ),
             const SizedBox(height: 15),
             
-            // Papan Tulis Hitung Kartun Retro
+            // Papan Tulis Visual Kartun (Ukuran Diperbesar untuk Menampung Emoji Benda)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 35),
+              padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
               decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D), // Hitam Papan Tulis
+                color: const Color(0xFF2D2D2D), // Hitam Papan Tulis Klasik
                 borderRadius: BorderRadius.circular(25),
-                border: Border.all(color: const Color(0xFF8D6E63), width: 6), // Bingkai Kayu Cokelat
+                border: Border.all(color: const Color(0xFF8D6E63), width: 6), // Bingkai Kayu
                 boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))],
               ),
               child: Column(
                 children: [
                   Text(
                     pesanStatus,
-                    style: const TextStyle(color: Colors.amberAccent, fontSize: 14, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: gameOver ? Colors.redAccent : Colors.amberAccent, 
+                      fontSize: 16, 
+                      fontWeight: FontWeight.bold
+                    ),
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 20),
                   Text(
-                    soalAktif.teksSoal,
-                    style: const TextStyle(fontSize: 48, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2),
+                    gameOver ? "☠️" : soalAktif.teksSoal,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold, height: 1.2),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 25),
 
-            // Kolom Input Jawaban Warna Kuning Mentega
+            // Kotak Jawaban Kuning Lucu
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF59D), // Kuning Mentega lembut
+                color: const Color(0xFFFFF59D),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.amber, width: 2),
               ),
               child: TextField(
                 controller: _ansController,
-                readOnly: true, // Mengisi via tombol bulatan di bawah
+                readOnly: true, // Anak-anak tinggal pencet bulatan di bawah
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.brown),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.brown),
                 decoration: const InputDecoration(
-                  hintText: "?",
-                  hintStyle: TextStyle(color: Colors.amber), // Selesai Diperbaiki
+                  hintText: "Tekan Angka Di Bawah",
+                  hintStyle: TextStyle(color: Colors.amber, fontSize: 16),
                   border: InputBorder.none,
                 ),
               ),
             ),
             const SizedBox(height: 25),
 
-            // Opsi Tombol Pilihan Angka Cepat (Menyesuaikan Soal Aktif)
-            if (!sudahDijawab)
+            // Tombol Bulatan Pilihan Angka Instan (Dipastikan Selalu Bernilai Positif)
+            if (!sudahDijawab && !gameOver)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -167,28 +232,32 @@ class _LatihanScreenState extends State<LatihanScreen> {
               ),
             const SizedBox(height: 25),
 
-            // Tombol Utama Aksi Hijau Terang (Cek Jawaban Ajaib!)
+            // Tombol Eksekusi Jawaban
             SizedBox(
               width: double.infinity,
               height: 60,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: sudahDijawab ? Colors.orangeAccent : const Color(0xFF2ECC71), // Hijau Game
+                  backgroundColor: gameOver 
+                      ? Colors.red 
+                      : (sudahDijawab ? Colors.orangeAccent : const Color(0xFF2ECC71)),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   elevation: 5,
                 ),
-                onPressed: sudahDijawab ? soalBerikutnya : cekJawaban,
+                onPressed: (sudahDijawab || gameOver) ? soalBerikutnya : cekJawaban,
                 child: Text(
-                  sudahDijawab ? "PETUALANGAN BERIKUTNYA ➔" : "🚀 CEK JAWABAN AJAIB!", 
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                  gameOver 
+                      ? "🔄 COBA PETUALANGAN LAGI" 
+                      : (sudahDijawab ? "PETUALANGAN BERIKUTNYA ➔" : "🚀 CEK JAWABAN AJAIB!"), 
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
                 ),
               ),
             ),
             const SizedBox(height: 20),
             
-            // Kotak Solusi Lampu Pintar
-            if (sudahDijawab)
+            // Kotak Bimbingan Belajar "Info Genius" Berbasis Karakter Visual
+            if (sudahDijawab && !gameOver)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -200,15 +269,15 @@ class _LatihanScreenState extends State<LatihanScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.lightbulb, color: Colors.amber, size: 30),
+                    const Icon(Icons.lightbulb, color: Colors.amber, size: 35),
                     const SizedBox(width: 15),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Info Genius:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.lightGreen)),
+                          const Text("Dongeng Pintar:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.lightGreen)),
                           const SizedBox(height: 5),
-                          Text(teksPenyelesaian, style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.3)),
+                          Text(teksPenyelesaian, style: TextStyle(fontSize: 16, color: Colors.grey[850], height: 1.4)),
                         ],
                       ),
                     ),
@@ -222,23 +291,23 @@ class _LatihanScreenState extends State<LatihanScreen> {
   }
 
   Widget _buildOptionButton(int value) {
-    if (value < 0) return const SizedBox(); // Menghindari tombol bernilai minus
+    if (value < 0) return const SizedBox(); // Proteksi agar tidak memunculkan pilihan angka negatif
     
     return InkWell(
       onTap: () => inputAngkaTombol(value),
       child: Container(
-        width: 60,
-        height: 60,
+        width: 65,
+        height: 65,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.blueGrey.withOpacity(0.2), width: 3), // Selesai Diperbaiki
+          border: Border.all(color: Colors.blueGrey.withOpacity(0.2), width: 3),
           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 3))],
         ),
         child: Center(
           child: Text(
             value.toString(),
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey),
           ),
         ),
       ),

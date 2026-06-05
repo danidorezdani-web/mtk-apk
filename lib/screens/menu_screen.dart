@@ -38,7 +38,7 @@ class MenuScreen extends StatelessWidget {
             ),
             const SizedBox(height: 25),
             
-            // Grid Menu 2 Kolom mirip di screenshot
+            // Grid Menu 2 Kolom khusus untuk anak TK/SD (4 Operasi Dasar)
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -49,10 +49,8 @@ class MenuScreen extends StatelessWidget {
               children: [
                 _buildGridCard(context, "Tambah", Icons.add, Colors.cyan, "Level 1"),
                 _buildGridCard(context, "Kurang", Icons.remove, Colors.amber, "Level 1"),
-                _buildGridCard(context, "Kali", Icons.close, Colors.lightGreen, "Level 1"),
-                _buildGridCard(context, "Bagi", Icons.percent, Colors.pinkAccent, "Level 1"),
-                _buildGridCard(context, "Akar", Icons.looks_one_outlined, Colors.purple, "Terkuat"),
-                _buildGridCard(context, "Pangkat", Icons.trending_up, Colors.orange, "Terkuat"),
+                _buildGridCard(context, "Kali", Icons.close, Colors.lightGreen, "Level 2"),
+                _buildGridCard(context, "Bagi", Icons.percent, Colors.pinkAccent, "Level 2"),
               ],
             ),
           ],
@@ -62,10 +60,8 @@ class MenuScreen extends StatelessWidget {
   }
 
   Widget _buildGridCard(BuildContext context, String title, IconData icon, Color color, String level) {
-    // Mapping nama judul ke argumen rute asli program kita
+    // Mapping nama judul ke argumen rute asli program
     String materiArg = title;
-    if (title == "Akar") materiArg = "Perakaran";
-    if (title == "Pangkat") materiArg = "Perpangkatan";
     if (title == "Tambah") materiArg = "Penjumlahan";
     if (title == "Kurang") materiArg = "Pengurangan";
     if (title == "Kali") materiArg = "Perkalian";
