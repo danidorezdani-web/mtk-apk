@@ -17,7 +17,7 @@ class _LatihanScreenState extends State<LatihanScreen> {
   String teksPenyelesaian = "";
   bool sudahDijawab = false;
 
-  // Variabel Fitur Belajar Sambil Bermain (Gamifikasi Anak)
+  // Variabel Fitur Belajar Sambil Bermain (Gamifikasi)
   int nyawa = 3;
   int koin = 0;
   int skor = 0;
@@ -29,12 +29,12 @@ class _LatihanScreenState extends State<LatihanScreen> {
     if (daftarSoal.isEmpty) {
       final String materi = ModalRoute.of(context)!.settings.arguments as String;
       
-      // Mengambil soal emoji dari bank soal
+      // Mengambil 20 soal emoji dari bank soal baru
       List<SoalModel> soalAsli = BankSoal.ambilSoal(materi);
       daftarSoal = List.from(soalAsli);
       
-      // Langsung diacak urutannya biar bervariasi bagi anak-anak
-      daftarSoal.shuffle(); 
+      // CATATAN GURU: Tidak menggunakan shuffle acak penuh agar urutan tingkat 
+      // kesulitan (Mudah -> Sedang -> Sulit -> Boss) terjaga dari nomor 1 sampai 20!
     }
   }
 
@@ -64,10 +64,23 @@ class _LatihanScreenState extends State<LatihanScreen> {
     });
   }
 
+  // FITUR BARU: Menyerah & Intip Solusi Secara Instan
+  void serahDanLihatJawaban() {
+    if (daftarSoal.isEmpty || gameOver || sudahDijawab) return;
+
+    SoalModel soalAktif = daftarSoal[indexSoalSaatIni];
+    setState(() {
+      _ansController.text = soalAktif.kunciJawaban.toString();
+      sudahDijawab = true;
+      teksPenyelesaian = soalAktif.caraPenyelesaian;
+      pesanStatus = "💡 Kotak Pintar Terbuka! Pelajari Caranya di Bawah!";
+      // Membuka jawaban lewat fitur bantuan tidak mengurangi nyawa dan tidak mendapat koin
+    });
+  }
+
   void soalBerikutnya() {
     setState(() {
       if (gameOver) {
-        // Reset Game Total
         indexSoalSaatIni = 0;
         nyawa = 3;
         koin = 0;
@@ -77,7 +90,6 @@ class _LatihanScreenState extends State<LatihanScreen> {
         pesanStatus = "Hitung Benda di Bawah Ini! ✨";
         teksPenyelesaian = "";
         sudahDijawab = false;
-        daftarSoal.shuffle(); // Acak ulang rute pulau bermain
       } else if (indexSoalSaatIni < daftarSoal.length - 1) {
         indexSoalSaatIni++;
         _ansController.clear();
@@ -85,7 +97,7 @@ class _LatihanScreenState extends State<LatihanScreen> {
         teksPenyelesaian = "";
         sudahDijawab = false;
       } else {
-        pesanStatus = "🏆 LUAR BIASA! Petualangan Selesai!";
+        pesanStatus = "🏆 LUAR BIASA! Seluruh 20 Misi Selesai!";
       }
     });
   }
@@ -105,39 +117,57 @@ class _LatihanScreenState extends State<LatihanScreen> {
     if (daftarSoal.isEmpty) {
       return Scaffold(
         backgroundColor: const Color(0xFFF9FBE7),
-        appBar: AppBar(title: Text(materi)),
         body: const Center(child: Text("Soal belum tersedia.")),
       );
     }
 
     SoalModel soalAktif = daftarSoal[indexSoalSaatIni];
 
+    // Menentukan teks label tingkat kesulitan berdasarkan nomor soal aktif
+    String labelTingkat = "Mudah ⭐";
+    Color warnaTingkat = Colors.cyan;
+    if (indexSoalSaatIni >= 5 && indexSoalSaatIni < 10) {
+      labelTingkat = "Sedang ⭐⭐";
+      warnaTingkat = Colors.orange;
+    } else if (indexSoalSaatIni >= 10 && indexSoalSaatIni < 15) {
+      labelTingkat = "Sulit 🔥🔥🔥";
+      warnaTingkat = Colors.pinkAccent;
+    } else if (indexSoalSaatIni >= 15) {
+      labelTingkat = "LEVEL BOSS 👑👹";
+      warnaTingkat = Colors.purple;
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4C3), // Hijau ceria ramah anak
+      backgroundColor: const Color(0xFFF0F4C3),
       appBar: AppBar(
-        title: Text("Misi Pintar: $materi", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+        title: Text("Misi ${indexSoalSaatIni + 1}/20", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.blueGrey),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // Banner Badge Penunjuk Tingkat Kesulitan Real-time
+          Container(
+            margin: const EdgeInsets.only(right: 15, top: 12, bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(color: warnaTingkat, borderRadius: BorderRadius.circular(15)),
+            child: Center(child: Text(labelTingkat, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+          )
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(25),
         child: Column(
           children: [
-            // Status Bar Atas (Hati Nyawa & Koin Emas)
+            // Status Bar Atas
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: List.generate(3, (index) {
-                    return Icon(
-                      Icons.favorite,
-                      color: index < nyawa ? Colors.red : Colors.grey[400],
-                      size: 32,
-                    );
+                    return Icon(Icons.favorite, color: index < nyawa ? Colors.red : Colors.grey[400], size: 32);
                   }),
                 ),
                 Row(
@@ -155,7 +185,7 @@ class _LatihanScreenState extends State<LatihanScreen> {
             ),
             const SizedBox(height: 20),
             
-            // Progress Bar Lintasan Belajar
+            // Progress Bar Lintasan 20 Soal
             LinearProgressIndicator(
               value: (indexSoalSaatIni + 1) / daftarSoal.length,
               backgroundColor: Colors.white,
@@ -165,14 +195,14 @@ class _LatihanScreenState extends State<LatihanScreen> {
             ),
             const SizedBox(height: 15),
             
-            // Papan Tulis Visual Kartun (Ukuran Diperbesar untuk Menampung Emoji Benda)
+            // Papan Tulis Visual Kartun
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
               decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D), // Hitam Papan Tulis Klasik
+                color: const Color(0xFF2D2D2D),
                 borderRadius: BorderRadius.circular(25),
-                border: Border.all(color: const Color(0xFF8D6E63), width: 6), // Bingkai Kayu
+                border: Border.all(color: const Color(0xFF8D6E63), width: 6),
                 boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))],
               ),
               child: Column(
@@ -180,17 +210,13 @@ class _LatihanScreenState extends State<LatihanScreen> {
                   Text(
                     pesanStatus,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: gameOver ? Colors.redAccent : Colors.amberAccent, 
-                      fontSize: 16, 
-                      fontWeight: FontWeight.bold
-                    ),
+                    style: TextStyle(color: gameOver ? Colors.redAccent : Colors.amberAccent, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
                   Text(
                     gameOver ? "☠️" : soalAktif.teksSoal,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold, height: 1.2),
+                    style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold, height: 1.3),
                   ),
                 ],
               ),
@@ -207,19 +233,28 @@ class _LatihanScreenState extends State<LatihanScreen> {
               ),
               child: TextField(
                 controller: _ansController,
-                readOnly: true, // Anak-anak tinggal pencet bulatan di bawah
+                readOnly: true,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.brown),
                 decoration: const InputDecoration(
-                  hintText: "Tekan Angka Di Bawah",
+                  hintText: "Pilih Bulatan Angka",
                   hintStyle: TextStyle(color: Colors.amber, fontSize: 16),
                   border: InputBorder.none,
                 ),
               ),
             ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 20),
 
-            // Tombol Bulatan Pilihan Angka Instan (Dipastikan Selalu Bernilai Positif)
+            // FITUR INSTAN: Tombol Bantuan Intip Jawaban jika anak-anak mentok
+            if (!sudahDijawab && !gameOver)
+              TextButton.icon(
+                icon: const Icon(Icons.psychology, color: Colors.brown),
+                label: const Text("Menyerah & Lihat Jawaban Ajaib ✨", style: TextStyle(color: Colors.brown, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+                onPressed: serahDanLihatJawaban,
+              ),
+            const SizedBox(height: 15),
+
+            // Tombol Bulatan Pilihan Angka Instan
             if (!sudahDijawab && !gameOver)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -232,15 +267,13 @@ class _LatihanScreenState extends State<LatihanScreen> {
               ),
             const SizedBox(height: 25),
 
-            // Tombol Eksekusi Jawaban
+            // Tombol Eksekusi Jawaban Utama
             SizedBox(
               width: double.infinity,
               height: 60,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: gameOver 
-                      ? Colors.red 
-                      : (sudahDijawab ? Colors.orangeAccent : const Color(0xFF2ECC71)),
+                  backgroundColor: gameOver ? Colors.red : (sudahDijawab ? Colors.orangeAccent : const Color(0xFF2ECC71)),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   elevation: 5,
@@ -256,7 +289,7 @@ class _LatihanScreenState extends State<LatihanScreen> {
             ),
             const SizedBox(height: 20),
             
-            // Kotak Bimbingan Belajar "Info Genius" Berbasis Karakter Visual
+            // Kotak Bimbingan Belajar "LANGKAH PINTAR" yang Jauh Lebih Detail
             if (sudahDijawab && !gameOver)
               Container(
                 width: double.infinity,
@@ -275,9 +308,9 @@ class _LatihanScreenState extends State<LatihanScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Dongeng Pintar:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.lightGreen)),
-                          const SizedBox(height: 5),
-                          Text(teksPenyelesaian, style: TextStyle(fontSize: 16, color: Colors.grey[850], height: 1.4)),
+                          const Text("Info Genius Guru:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.lightGreen)),
+                          const SizedBox(height: 8),
+                          Text(teksPenyelesaian, style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.4)),
                         ],
                       ),
                     ),
@@ -291,7 +324,7 @@ class _LatihanScreenState extends State<LatihanScreen> {
   }
 
   Widget _buildOptionButton(int value) {
-    if (value < 0) return const SizedBox(); // Proteksi agar tidak memunculkan pilihan angka negatif
+    if (value < 0) return const SizedBox();
     
     return InkWell(
       onTap: () => inputAngkaTombol(value),
@@ -305,10 +338,7 @@ class _LatihanScreenState extends State<LatihanScreen> {
           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 3))],
         ),
         child: Center(
-          child: Text(
-            value.toString(),
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey),
-          ),
+          child: Text(value.toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
         ),
       ),
     );
